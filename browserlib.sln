@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "browserlib", "browserlib\browserlib.vcxproj", "{1B27D9AC-ACDF-4E7A-BD47-DE3437323FA3}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "browserlibTest", "browserlibTest\browserlibTest.vcxproj", "{F16B9E3C-08D7-4B83-B41D-144436840582}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1B27D9AC-ACDF-4E7A-BD47-DE3437323FA3} = {1B27D9AC-ACDF-4E7A-BD47-DE3437323FA3}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
