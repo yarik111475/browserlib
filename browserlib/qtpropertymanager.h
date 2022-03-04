@@ -41,6 +41,23 @@
 #define QTPROPERTYMANAGER_H
 
 #include "qtpropertybrowser.h"
+#include "qpoint3d.h"
+#include "qpoint3df.h"
+#include "qrotation3D.h"
+#include "qtpropertybrowserutils_p.h"
+#include <QtCore/QDateTime>
+#include <QtCore/QLocale>
+#include <QtCore/QMap>
+#include <QtCore/QTimer>
+#include <QtCore/QRegularExpression>
+#include <QtGui/QIcon>
+#include <QtCore/QMetaEnum>
+#include <QtGui/QFontDatabase>
+#include <QtWidgets/QStyleOption>
+#include <QtWidgets/QStyle>
+#include <QtWidgets/QApplication>
+#include <QtGui/QPainter>
+#include <QtWidgets/QLabel>
 
 QT_BEGIN_NAMESPACE
 class QPoint3D;
@@ -51,6 +68,76 @@ class QTime;
 class QDateTime;
 class QLocale;
 class QRegularExpression;
+
+//template functions
+template <class PrivateData, class Value>
+static void setSimpleMinimumData(PrivateData* data, const Value& minVal)
+{
+    data->minVal = minVal;
+    if (data->maxVal < data->minVal)
+        data->maxVal = data->minVal;
+
+    if (data->val < data->minVal)
+        data->val = data->minVal;
+}
+
+template <class PrivateData, class Value>
+static void setSimpleMaximumData(PrivateData* data, const Value& maxVal)
+{
+    data->maxVal = maxVal;
+    if (data->minVal > data->maxVal)
+        data->minVal = data->maxVal;
+
+    if (data->val > data->maxVal)
+        data->val = data->maxVal;
+}
+
+template <class PrivateData, class Value>
+static void setSizeMinimumData(PrivateData* data, const Value& newMinVal)
+{
+    data->minVal = newMinVal;
+    if (data->maxVal.width() < data->minVal.width())
+        data->maxVal.setWidth(data->minVal.width());
+    if (data->maxVal.height() < data->minVal.height())
+        data->maxVal.setHeight(data->minVal.height());
+
+    if (data->val.width() < data->minVal.width())
+        data->val.setWidth(data->minVal.width());
+    if (data->val.height() < data->minVal.height())
+        data->val.setHeight(data->minVal.height());
+}
+
+template <class PrivateData, class Value>
+static void setSizeMaximumData(PrivateData* data, const Value& newMaxVal)
+{
+    data->maxVal = newMaxVal;
+    if (data->minVal.width() > data->maxVal.width())
+        data->minVal.setWidth(data->maxVal.width());
+    if (data->minVal.height() > data->maxVal.height())
+        data->minVal.setHeight(data->maxVal.height());
+
+    if (data->val.width() > data->maxVal.width())
+        data->val.setWidth(data->maxVal.width());
+    if (data->val.height() > data->maxVal.height())
+        data->val.setHeight(data->maxVal.height());
+}
+
+template <class SizeValue>
+static SizeValue qBoundSize(const SizeValue& minVal, const SizeValue& val, const SizeValue& maxVal)
+{
+    SizeValue croppedVal = val;
+    if (minVal.width() > val.width())
+        croppedVal.setWidth(minVal.width());
+    else if (maxVal.width() < val.width())
+        croppedVal.setWidth(maxVal.width());
+
+    if (minVal.height() > val.height())
+        croppedVal.setHeight(minVal.height());
+    else if (maxVal.height() < val.height())
+        croppedVal.setHeight(maxVal.height());
+
+    return croppedVal;
+}
 
 class QtGroupPropertyManager : public QtAbstractPropertyManager
 {
@@ -66,8 +153,28 @@ protected:
     void uninitializeProperty(QtProperty *property) override;
 };
 
-class QtIntPropertyManagerPrivate;
+class QtIntPropertyManager;
+class QtIntPropertyManagerPrivate
+{
+    QtIntPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtIntPropertyManager)
+public:
 
+    struct Data
+    {
+        int val{ 0 };
+        int minVal{ -INT_MAX };
+        int maxVal{ INT_MAX };
+        int singleStep{ 1 };
+        int minimumValue() const { return minVal; }
+        int maximumValue() const { return maxVal; }
+        void setMinimumValue(int newMinVal) { setSimpleMinimumData(this, newMinVal); }
+        void setMaximumValue(int newMaxVal) { setSimpleMaximumData(this, newMaxVal); }
+    };
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    PropertyValueMap m_values;
+};
 class QtIntPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -100,8 +207,18 @@ private:
     Q_DISABLE_COPY_MOVE(QtIntPropertyManager)
 };
 
-class QtBoolPropertyManagerPrivate;
+class QtBoolPropertyManager;
+class QtBoolPropertyManagerPrivate
+{
+    QtBoolPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtBoolPropertyManager)
+public:
+    QtBoolPropertyManagerPrivate();
 
+    QMap<const QtProperty*, bool> m_values;
+    const QIcon m_checkedIcon;
+    const QIcon m_uncheckedIcon;
+};
 class QtBoolPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -126,8 +243,29 @@ private:
     Q_DISABLE_COPY_MOVE(QtBoolPropertyManager)
 };
 
-class QtDoublePropertyManagerPrivate;
+class QtDoublePropertyManager;
+class QtDoublePropertyManagerPrivate
+{
+    QtDoublePropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtDoublePropertyManager)
+public:
 
+    struct Data
+    {
+        double val{ 0 };
+        double minVal{ -DBL_MAX };
+        double maxVal{ DBL_MAX };
+        double singleStep{ 1 };
+        int decimals{ 2 };
+        double minimumValue() const { return minVal; }
+        double maximumValue() const { return maxVal; }
+        void setMinimumValue(double newMinVal) { setSimpleMinimumData(this, newMinVal); }
+        void setMaximumValue(double newMaxVal) { setSimpleMaximumData(this, newMaxVal); }
+    };
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    PropertyValueMap m_values;
+};
 class QtDoublePropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -163,8 +301,22 @@ private:
     Q_DISABLE_COPY_MOVE(QtDoublePropertyManager)
 };
 
-class QtStringPropertyManagerPrivate;
+class QtStringPropertyManager;
+class QtStringPropertyManagerPrivate
+{
+    QtStringPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtStringPropertyManager)
+public:
 
+    struct Data
+    {
+        QString val;
+        QRegularExpression regExp;
+    };
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    QMap<const QtProperty*, Data> m_values;
+};
 class QtStringPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -191,8 +343,30 @@ private:
     Q_DISABLE_COPY_MOVE(QtStringPropertyManager)
 };
 
-class QtDatePropertyManagerPrivate;
+class QtDatePropertyManager;
+class QtDatePropertyManagerPrivate
+{
+    QtDatePropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtDatePropertyManager)
+public:
+    explicit QtDatePropertyManagerPrivate(QtDatePropertyManager* q);
 
+    struct Data
+    {
+        QDate val{ QDate::currentDate() };
+        QDate minVal{ QDate(1752, 9, 14) };
+        QDate maxVal{ QDate(9999, 12, 31) };
+        QDate minimumValue() const { return minVal; }
+        QDate maximumValue() const { return maxVal; }
+        void setMinimumValue(QDate newMinVal) { setSimpleMinimumData(this, newMinVal); }
+        void setMaximumValue(QDate newMaxVal) { setSimpleMaximumData(this, newMaxVal); }
+    };
+
+    QString m_format;
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    QMap<const QtProperty*, Data> m_values;
+};
 class QtDatePropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -222,8 +396,19 @@ private:
     Q_DISABLE_COPY_MOVE(QtDatePropertyManager)
 };
 
-class QtTimePropertyManagerPrivate;
+class QtTimePropertyManager;
+class QtTimePropertyManagerPrivate
+{
+    QtTimePropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtTimePropertyManager)
+public:
+    explicit QtTimePropertyManagerPrivate(QtTimePropertyManager* q);
 
+    const QString m_format;
+
+    typedef QMap<const QtProperty*, QTime> PropertyValueMap;
+    PropertyValueMap m_values;
+};
 class QtTimePropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -247,8 +432,19 @@ private:
     Q_DISABLE_COPY_MOVE(QtTimePropertyManager)
 };
 
-class QtDateTimePropertyManagerPrivate;
+class QtDateTimePropertyManager;
+class QtDateTimePropertyManagerPrivate
+{
+    QtDateTimePropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtDateTimePropertyManager)
+public:
+    explicit QtDateTimePropertyManagerPrivate(QtDateTimePropertyManager* q);
 
+    const QString m_format;
+
+    typedef QMap<const QtProperty*, QDateTime> PropertyValueMap;
+    PropertyValueMap m_values;
+};
 class QtDateTimePropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -272,8 +468,18 @@ private:
     Q_DISABLE_COPY_MOVE(QtDateTimePropertyManager)
 };
 
-class QtKeySequencePropertyManagerPrivate;
+class QtKeySequencePropertyManager;
+class QtKeySequencePropertyManagerPrivate
+{
+    QtKeySequencePropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtKeySequencePropertyManager)
+public:
 
+    QString m_format;
+
+    typedef QMap<const QtProperty*, QKeySequence> PropertyValueMap;
+    PropertyValueMap m_values;
+};
 class QtKeySequencePropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -297,8 +503,16 @@ private:
     Q_DISABLE_COPY_MOVE(QtKeySequencePropertyManager)
 };
 
-class QtCharPropertyManagerPrivate;
+class QtCharPropertyManager;
+class QtCharPropertyManagerPrivate
+{
+    QtCharPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtCharPropertyManager)
+public:
 
+    typedef QMap<const QtProperty*, QChar> PropertyValueMap;
+    PropertyValueMap m_values;
+};
 class QtCharPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -323,8 +537,30 @@ private:
 };
 
 class QtEnumPropertyManager;
-class QtLocalePropertyManagerPrivate;
 
+class QtLocalePropertyManager;
+class QtLocalePropertyManagerPrivate
+{
+    QtLocalePropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtLocalePropertyManager)
+public:
+
+    QtLocalePropertyManagerPrivate();
+
+    void slotEnumChanged(QtProperty* property, int value);
+    void slotPropertyDestroyed(QtProperty* property);
+
+    typedef QMap<const QtProperty*, QLocale> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtEnumPropertyManager* m_enumPropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToLanguage;
+    QMap<const QtProperty*, QtProperty*> m_propertyToCountry;
+
+    QMap<const QtProperty*, QtProperty*> m_languageToProperty;
+    QMap<const QtProperty*, QtProperty*> m_countryToProperty;
+};
 class QtLocalePropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -352,8 +588,27 @@ private:
     Q_PRIVATE_SLOT(d_func(), void slotPropertyDestroyed(QtProperty *))
 };
 
-class QtPointPropertyManagerPrivate;
+class QtPointPropertyManager;
+class QtPointPropertyManagerPrivate
+{
+    QtPointPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtPointPropertyManager)
+public:
 
+    void slotIntChanged(QtProperty* property, int value);
+    void slotPropertyDestroyed(QtProperty* property);
+
+    typedef QMap<const QtProperty*, QPoint> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtIntPropertyManager* m_intPropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToX;
+    QMap<const QtProperty*, QtProperty*> m_propertyToY;
+
+    QMap<const QtProperty*, QtProperty*> m_xToProperty;
+    QMap<const QtProperty*, QtProperty*> m_yToProperty;
+};
 class QtPointPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -382,8 +637,29 @@ private:
 };
 
 //########### start of QtPoint3DPropertyManager declaration
-class QtPoint3DPropertyManagerPrivate;
+class QtPoint3DPropertyManager;
+class QtPoint3DPropertyManagerPrivate
+{
+    QtPoint3DPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtPoint3DPropertyManager)
+public:
 
+    void slotIntChanged(QtProperty* property, int value);
+    void slotPropertyDestroyed(QtProperty* property);
+
+    typedef QMap<const QtProperty*, QPoint3D> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtIntPropertyManager* m_intPropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToX;
+    QMap<const QtProperty*, QtProperty*> m_propertyToY;
+    QMap<const QtProperty*, QtProperty*> m_propertyToZ;
+
+    QMap<const QtProperty*, QtProperty*> m_xToProperty;
+    QMap<const QtProperty*, QtProperty*> m_yToProperty;
+    QMap<const QtProperty*, QtProperty*> m_zToProperty;
+};
 class QtPoint3DPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -413,8 +689,35 @@ private:
 //########## end of QtPoint3DPropertyManager declaration
 
 //########## start of QtPoint3DFPropertyManager declaration
-class QtPoint3DFPropertyManagerPrivate;
+class QtPoint3DFPropertyManager;
+class QtPoint3DFPropertyManagerPrivate
+{
+    QtPoint3DFPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtPoint3DFPropertyManager)
+public:
 
+    struct Data
+    {
+        QPoint3DF val;
+        int decimals{ 2 };
+    };
+
+    void slotDoubleChanged(QtProperty* property, double value);
+    void slotPropertyDestroyed(QtProperty* property);
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtDoublePropertyManager* m_doublePropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToX;
+    QMap<const QtProperty*, QtProperty*> m_propertyToY;
+    QMap<const QtProperty*, QtProperty*> m_propertyToZ;
+
+    QMap<const QtProperty*, QtProperty*> m_xToProperty;
+    QMap<const QtProperty*, QtProperty*> m_yToProperty;
+    QMap<const QtProperty*, QtProperty*> m_zToProperty;
+};
 class QtPoint3DFPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -447,8 +750,29 @@ private:
 //########## end of QtPoint3DFPropertyManager declaration
 
 //########### start of QtRotation3DPropertyManager declaration
-class QtRotation3DPropertyManagerPrivate;
+class QtRotation3DPropertyManager;
+class QtRotation3DPropertyManagerPrivate
+{
+    QtRotation3DPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtRotation3DPropertyManager)
+public:
 
+    void slotIntChanged(QtProperty* property, int value);
+    void slotPropertyDestroyed(QtProperty* property);
+
+    typedef QMap<const QtProperty*, QRotation3D> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtIntPropertyManager* m_intPropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToX;
+    QMap<const QtProperty*, QtProperty*> m_propertyToY;
+    QMap<const QtProperty*, QtProperty*> m_propertyToZ;
+
+    QMap<const QtProperty*, QtProperty*> m_xToProperty;
+    QMap<const QtProperty*, QtProperty*> m_yToProperty;
+    QMap<const QtProperty*, QtProperty*> m_zToProperty;
+};
 class QtRotation3DPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -477,8 +801,33 @@ private:
 };
 //########## end of QtRotation3DPropertyManager declaration
 
-class QtPointFPropertyManagerPrivate;
+class QtPointFPropertyManager;
+class QtPointFPropertyManagerPrivate
+{
+    QtPointFPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtPointFPropertyManager)
+public:
 
+    struct Data
+    {
+        QPointF val;
+        int decimals{ 2 };
+    };
+
+    void slotDoubleChanged(QtProperty* property, double value);
+    void slotPropertyDestroyed(QtProperty* property);
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtDoublePropertyManager* m_doublePropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToX;
+    QMap<const QtProperty*, QtProperty*> m_propertyToY;
+
+    QMap<const QtProperty*, QtProperty*> m_xToProperty;
+    QMap<const QtProperty*, QtProperty*> m_yToProperty;
+};
 class QtPointFPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -511,8 +860,41 @@ private:
 
 //##########
 
-class QtSizePropertyManagerPrivate;
+class QtSizePropertyManager;
+class QtSizePropertyManagerPrivate
+{
+    QtSizePropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtSizePropertyManager)
+public:
 
+    void slotIntChanged(QtProperty* property, int value);
+    void slotPropertyDestroyed(QtProperty* property);
+    void setValue(QtProperty* property, const QSize& val);
+    void setRange(QtProperty* property,
+        const QSize& minVal, const QSize& maxVal, const QSize& val);
+
+    struct Data
+    {
+        QSize val{ 0, 0 };
+        QSize minVal{ 0, 0 };
+        QSize maxVal{ INT_MAX, INT_MAX };
+        QSize minimumValue() const { return minVal; }
+        QSize maximumValue() const { return maxVal; }
+        void setMinimumValue(const QSize& newMinVal) { setSizeMinimumData(this, newMinVal); }
+        void setMaximumValue(const QSize& newMaxVal) { setSizeMaximumData(this, newMaxVal); }
+    };
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtIntPropertyManager* m_intPropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToW;
+    QMap<const QtProperty*, QtProperty*> m_propertyToH;
+
+    QMap<const QtProperty*, QtProperty*> m_wToProperty;
+    QMap<const QtProperty*, QtProperty*> m_hToProperty;
+};
 class QtSizePropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -546,8 +928,41 @@ private:
     Q_PRIVATE_SLOT(d_func(), void slotPropertyDestroyed(QtProperty *))
 };
 
-class QtSizeFPropertyManagerPrivate;
+class QtSizeFPropertyManager;
+class QtSizeFPropertyManagerPrivate
+{
+    QtSizeFPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtSizeFPropertyManager)
+public:
 
+    void slotDoubleChanged(QtProperty* property, double value);
+    void slotPropertyDestroyed(QtProperty* property);
+    void setValue(QtProperty* property, const QSizeF& val);
+    void setRange(QtProperty* property,
+        const QSizeF& minVal, const QSizeF& maxVal, const QSizeF& val);
+
+    struct Data
+    {
+        QSizeF val{ 0, 0 };
+        QSizeF minVal{ 0, 0 };
+        QSizeF maxVal{ std::numeric_limits<qreal>::max(), std::numeric_limits<qreal>::max() };
+        int decimals{ 2 };
+        QSizeF minimumValue() const { return minVal; }
+        QSizeF maximumValue() const { return maxVal; }
+        void setMinimumValue(const QSizeF& newMinVal) { setSizeMinimumData(this, newMinVal); }
+        void setMaximumValue(const QSizeF& newMaxVal) { setSizeMaximumData(this, newMaxVal); }
+    };
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtDoublePropertyManager* m_doublePropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToW;
+    QMap<const QtProperty*, QtProperty*> m_propertyToH;
+
+    QMap<const QtProperty*, QtProperty*> m_wToProperty;
+    QMap<const QtProperty*, QtProperty*> m_hToProperty;
+};
 class QtSizeFPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -584,8 +999,38 @@ private:
     Q_PRIVATE_SLOT(d_func(), void slotPropertyDestroyed(QtProperty *))
 };
 
-class QtRectPropertyManagerPrivate;
+class QtRectPropertyManager;
+class QtRectPropertyManagerPrivate
+{
+    QtRectPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtRectPropertyManager)
+public:
 
+    void slotIntChanged(QtProperty* property, int value);
+    void slotPropertyDestroyed(QtProperty* property);
+    void setConstraint(QtProperty* property, const QRect& constraint, const QRect& val);
+
+    struct Data
+    {
+        QRect val{ 0, 0, 0, 0 };
+        QRect constraint;
+    };
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtIntPropertyManager* m_intPropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToX;
+    QMap<const QtProperty*, QtProperty*> m_propertyToY;
+    QMap<const QtProperty*, QtProperty*> m_propertyToW;
+    QMap<const QtProperty*, QtProperty*> m_propertyToH;
+
+    QMap<const QtProperty*, QtProperty*> m_xToProperty;
+    QMap<const QtProperty*, QtProperty*> m_yToProperty;
+    QMap<const QtProperty*, QtProperty*> m_wToProperty;
+    QMap<const QtProperty*, QtProperty*> m_hToProperty;
+};
 class QtRectPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -616,8 +1061,39 @@ private:
     Q_PRIVATE_SLOT(d_func(), void slotPropertyDestroyed(QtProperty *))
 };
 
-class QtRectFPropertyManagerPrivate;
+class QtRectFPropertyManager;
+class QtRectFPropertyManagerPrivate
+{
+    QtRectFPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtRectFPropertyManager)
+public:
 
+    void slotDoubleChanged(QtProperty* property, double value);
+    void slotPropertyDestroyed(QtProperty* property);
+    void setConstraint(QtProperty* property, const QRectF& constraint, const QRectF& val);
+
+    struct Data
+    {
+        QRectF val{ 0, 0, 0, 0 };
+        QRectF constraint;
+        int decimals{ 2 };
+    };
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtDoublePropertyManager* m_doublePropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToX;
+    QMap<const QtProperty*, QtProperty*> m_propertyToY;
+    QMap<const QtProperty*, QtProperty*> m_propertyToW;
+    QMap<const QtProperty*, QtProperty*> m_propertyToH;
+
+    QMap<const QtProperty*, QtProperty*> m_xToProperty;
+    QMap<const QtProperty*, QtProperty*> m_yToProperty;
+    QMap<const QtProperty*, QtProperty*> m_wToProperty;
+    QMap<const QtProperty*, QtProperty*> m_hToProperty;
+};
 class QtRectFPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -651,8 +1127,23 @@ private:
     Q_PRIVATE_SLOT(d_func(), void slotPropertyDestroyed(QtProperty *))
 };
 
-class QtEnumPropertyManagerPrivate;
+class QtEnumPropertyManager;
+class QtEnumPropertyManagerPrivate
+{
+    QtEnumPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtEnumPropertyManager)
+public:
 
+    struct Data
+    {
+        int val{ -1 };
+        QStringList enumNames;
+        QMap<int, QIcon> enumIcons;
+    };
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    PropertyValueMap m_values;
+};
 class QtEnumPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -683,8 +1174,31 @@ private:
     Q_DISABLE_COPY_MOVE(QtEnumPropertyManager)
 };
 
-class QtFlagPropertyManagerPrivate;
+class QtFlagPropertyManager;
+class QtFlagPropertyManagerPrivate
+{
+    QtFlagPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtFlagPropertyManager)
+public:
 
+    void slotBoolChanged(QtProperty* property, bool value);
+    void slotPropertyDestroyed(QtProperty* property);
+
+    struct Data
+    {
+        int val{ -1 };
+        QStringList flagNames;
+    };
+
+    typedef QMap<const QtProperty*, Data> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtBoolPropertyManager* m_boolPropertyManager;
+
+    QMap<const QtProperty*, QList<QtProperty*> > m_propertyToFlags;
+
+    QMap<const QtProperty*, QtProperty*> m_flagToProperty;
+};
 class QtFlagPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -715,8 +1229,35 @@ private:
     Q_PRIVATE_SLOT(d_func(), void slotPropertyDestroyed(QtProperty *))
 };
 
-class QtSizePolicyPropertyManagerPrivate;
+class QtSizePolicyPropertyManager;
+class QtSizePolicyPropertyManagerPrivate
+{
+    QtSizePolicyPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtSizePolicyPropertyManager)
+public:
 
+    QtSizePolicyPropertyManagerPrivate();
+
+    void slotIntChanged(QtProperty* property, int value);
+    void slotEnumChanged(QtProperty* property, int value);
+    void slotPropertyDestroyed(QtProperty* property);
+
+    typedef QMap<const QtProperty*, QSizePolicy> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtIntPropertyManager* m_intPropertyManager;
+    QtEnumPropertyManager* m_enumPropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToHPolicy;
+    QMap<const QtProperty*, QtProperty*> m_propertyToVPolicy;
+    QMap<const QtProperty*, QtProperty*> m_propertyToHStretch;
+    QMap<const QtProperty*, QtProperty*> m_propertyToVStretch;
+
+    QMap<const QtProperty*, QtProperty*> m_hPolicyToProperty;
+    QMap<const QtProperty*, QtProperty*> m_vPolicyToProperty;
+    QMap<const QtProperty*, QtProperty*> m_hStretchToProperty;
+    QMap<const QtProperty*, QtProperty*> m_vStretchToProperty;
+};
 class QtSizePolicyPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -746,8 +1287,50 @@ private:
     Q_PRIVATE_SLOT(d_func(), void slotPropertyDestroyed(QtProperty *))
 };
 
-class QtFontPropertyManagerPrivate;
+class QtFontPropertyManager;
+class QtFontPropertyManagerPrivate
+{
+    QtFontPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtFontPropertyManager)
+public:
 
+    QtFontPropertyManagerPrivate();
+
+    void slotIntChanged(QtProperty* property, int value);
+    void slotEnumChanged(QtProperty* property, int value);
+    void slotBoolChanged(QtProperty* property, bool value);
+    void slotPropertyDestroyed(QtProperty* property);
+    void slotFontDatabaseChanged();
+    void slotFontDatabaseDelayedChange();
+
+    QStringList m_familyNames;
+
+    typedef QMap<const QtProperty*, QFont> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtIntPropertyManager* m_intPropertyManager;
+    QtEnumPropertyManager* m_enumPropertyManager;
+    QtBoolPropertyManager* m_boolPropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToFamily;
+    QMap<const QtProperty*, QtProperty*> m_propertyToPointSize;
+    QMap<const QtProperty*, QtProperty*> m_propertyToBold;
+    QMap<const QtProperty*, QtProperty*> m_propertyToItalic;
+    QMap<const QtProperty*, QtProperty*> m_propertyToUnderline;
+    QMap<const QtProperty*, QtProperty*> m_propertyToStrikeOut;
+    QMap<const QtProperty*, QtProperty*> m_propertyToKerning;
+
+    QMap<const QtProperty*, QtProperty*> m_familyToProperty;
+    QMap<const QtProperty*, QtProperty*> m_pointSizeToProperty;
+    QMap<const QtProperty*, QtProperty*> m_boldToProperty;
+    QMap<const QtProperty*, QtProperty*> m_italicToProperty;
+    QMap<const QtProperty*, QtProperty*> m_underlineToProperty;
+    QMap<const QtProperty*, QtProperty*> m_strikeOutToProperty;
+    QMap<const QtProperty*, QtProperty*> m_kerningToProperty;
+
+    bool m_settingValue;
+    QTimer* m_fontDatabaseChangeTimer;
+};
 class QtFontPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -782,8 +1365,31 @@ private:
     Q_PRIVATE_SLOT(d_func(), void slotFontDatabaseDelayedChange())
 };
 
-class QtColorPropertyManagerPrivate;
+class QtColorPropertyManager;
+class QtColorPropertyManagerPrivate
+{
+    QtColorPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtColorPropertyManager)
+public:
 
+    void slotIntChanged(QtProperty* property, int value);
+    void slotPropertyDestroyed(QtProperty* property);
+
+    typedef QMap<const QtProperty*, QColor> PropertyValueMap;
+    PropertyValueMap m_values;
+
+    QtIntPropertyManager* m_intPropertyManager;
+
+    QMap<const QtProperty*, QtProperty*> m_propertyToR;
+    QMap<const QtProperty*, QtProperty*> m_propertyToG;
+    QMap<const QtProperty*, QtProperty*> m_propertyToB;
+    QMap<const QtProperty*, QtProperty*> m_propertyToA;
+
+    QMap<const QtProperty*, QtProperty*> m_rToProperty;
+    QMap<const QtProperty*, QtProperty*> m_gToProperty;
+    QMap<const QtProperty*, QtProperty*> m_bToProperty;
+    QMap<const QtProperty*, QtProperty*> m_aToProperty;
+};
 class QtColorPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
@@ -812,8 +1418,15 @@ private:
     Q_PRIVATE_SLOT(d_func(), void slotPropertyDestroyed(QtProperty *))
 };
 
-class QtCursorPropertyManagerPrivate;
-
+class QtCursorPropertyManager;
+class QtCursorPropertyManagerPrivate
+{
+    QtCursorPropertyManager* q_ptr;
+    Q_DECLARE_PUBLIC(QtCursorPropertyManager)
+public:
+    typedef QMap<const QtProperty*, QCursor> PropertyValueMap;
+    PropertyValueMap m_values;
+};
 class QtCursorPropertyManager : public QtAbstractPropertyManager
 {
     Q_OBJECT
