@@ -286,44 +286,6 @@ static void setMaximumValue(PropertyManager *manager, PropertyManagerPrivate *ma
             property, &PropertyManagerPrivate::Data::maximumValue, &PropertyManagerPrivate::Data::setMaximumValue, maxVal, setSubPropertyRange);
 }
 
-class QtMetaEnumWrapper : public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(QSizePolicy::Policy policy READ policy)
-public:
-    QSizePolicy::Policy policy() const { return QSizePolicy::Ignored; }
-private:
-    QtMetaEnumWrapper(QObject *parent) : QObject(parent) {}
-};
-
-class QtMetaEnumProvider
-{
-public:
-    QtMetaEnumProvider();
-
-    QStringList policyEnumNames() const { return m_policyEnumNames; }
-    QStringList languageEnumNames() const { return m_languageEnumNames; }
-    QStringList countryEnumNames(QLocale::Language language) const { return m_countryEnumNames.value(language); }
-
-    QSizePolicy::Policy indexToSizePolicy(int index) const;
-    int sizePolicyToIndex(QSizePolicy::Policy policy) const;
-
-    void indexToLocale(int languageIndex, int countryIndex, QLocale::Language *language, QLocale::Country *country) const;
-    void localeToIndex(QLocale::Language language, QLocale::Country country, int *languageIndex, int *countryIndex) const;
-
-private:
-    void initLocale();
-
-    QStringList m_policyEnumNames;
-    QStringList m_languageEnumNames;
-    QMap<QLocale::Language, QStringList> m_countryEnumNames;
-    QMap<int, QLocale::Language> m_indexToLanguage;
-    QMap<QLocale::Language, int> m_languageToIndex;
-    QMap<int, QMap<int, QLocale::Country> > m_indexToCountry;
-    QMap<QLocale::Language, QMap<QLocale::Country, int> > m_countryToIndex;
-    QMetaEnum m_policyEnum;
-};
-
 static QList<QLocale::Country> sortCountries(const QList<QLocale::Country> &countries)
 {
     QMultiMap<QString, QLocale::Country> nameToCountry;

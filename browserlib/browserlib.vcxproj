@@ -123,18 +123,18 @@
     <ClCompile Include="qtgroupboxpropertybrowser.cpp" />
     <ClCompile Include="qtpropertybrowser.cpp" />
     <ClCompile Include="qtpropertybrowserutils.cpp" />
-    <QtMoc Include="qtpropertymanager.cpp">
+    <ClCompile Include="qtpropertymanager.cpp">
       <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">input</DynamicSource>
       <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename).moc</QtMocFileName>
       <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Release|x64'">input</DynamicSource>
       <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename).moc</QtMocFileName>
-    </QtMoc>
-    <QtMoc Include="qttreepropertybrowser.cpp">
+    </ClCompile>
+    <ClCompile Include="qttreepropertybrowser.cpp">
       <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">input</DynamicSource>
       <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename).moc</QtMocFileName>
       <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Release|x64'">input</DynamicSource>
       <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename).moc</QtMocFileName>
-    </QtMoc>
+    </ClCompile>
     <ClCompile Include="qtvariantproperty.cpp" />
     <ClCompile Include="rangeslider.cpp" />
     <ClCompile Include="stdafx.cpp">

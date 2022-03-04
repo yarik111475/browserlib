@@ -63,7 +63,7 @@
       <AdditionalIncludeDirectories>C:\Qt\projects\Largix\browserlib\browserlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>C:\Qt\projects\Largix\browserlib\x64\Debug\browserlib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>C:\Qt\projects\Largix\browserlib\x64\Debug\browserlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Qt\projects\Largix\browserlib\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

@@ -42,28 +42,6 @@ QT_BEGIN_NAMESPACE
 
 class QtPropertyEditorView;
 
-// ------------ QtPropertyEditorView
-class QtPropertyEditorView : public QTreeWidget
-{
-    Q_OBJECT
-public:
-    QtPropertyEditorView(QWidget *parent = 0);
-
-    void setEditorPrivate(QtTreePropertyBrowserPrivate *editorPrivate)
-        { m_editorPrivate = editorPrivate; }
-
-    QTreeWidgetItem *indexToItem(const QModelIndex &index) const
-        { return itemFromIndex(index); }
-
-protected:
-    void keyPressEvent(QKeyEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-
-private:
-    QtTreePropertyBrowserPrivate *m_editorPrivate;
-};
-
 QtPropertyEditorView::QtPropertyEditorView(QWidget *parent) :
     QTreeWidget(parent),
     m_editorPrivate(0)
@@ -141,55 +119,6 @@ void QtPropertyEditorView::mousePressEvent(QMouseEvent *event)
         }
     }
 }
-
-// ------------ QtPropertyEditorDelegate
-class QtPropertyEditorDelegate : public QItemDelegate
-{
-    Q_OBJECT
-public:
-    QtPropertyEditorDelegate(QObject *parent = 0)
-        : QItemDelegate(parent), m_editorPrivate(0), m_editedItem(0), m_editedWidget(0)
-        {}
-
-    void setEditorPrivate(QtTreePropertyBrowserPrivate *editorPrivate)
-        { m_editorPrivate = editorPrivate; }
-
-    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
-            const QModelIndex &index) const override;
-
-    void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
-            const QModelIndex &index) const override;
-
-    void paint(QPainter *painter, const QStyleOptionViewItem &option,
-            const QModelIndex &index) const override;
-
-    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-
-    void setModelData(QWidget *, QAbstractItemModel *,
-            const QModelIndex &) const  override {}
-
-    void setEditorData(QWidget *, const QModelIndex &) const override {}
-
-    bool eventFilter(QObject *object, QEvent *event) override;
-    void closeEditor(QtProperty *property);
-
-    QTreeWidgetItem *editedItem() const { return m_editedItem; }
-
-private slots:
-    void slotEditorDestroyed(QObject *object);
-
-private:
-    int indentation(const QModelIndex &index) const;
-
-    typedef QMap<QWidget *, QtProperty *> EditorToPropertyMap;
-    mutable EditorToPropertyMap m_editorToProperty;
-
-    typedef QMap<QtProperty *, QWidget *> PropertyToEditorMap;
-    mutable PropertyToEditorMap m_propertyToEditor;
-    QtTreePropertyBrowserPrivate *m_editorPrivate;
-    mutable QTreeWidgetItem *m_editedItem;
-    mutable QWidget *m_editedWidget;
-};
 
 int QtPropertyEditorDelegate::indentation(const QModelIndex &index) const
 {
