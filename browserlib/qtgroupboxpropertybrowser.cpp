@@ -38,58 +38,8 @@
 ****************************************************************************/
 
 #include "qtgroupboxpropertybrowser.h"
-#include <QtCore/QSet>
-#include <QtWidgets/QGridLayout>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QGroupBox>
-#include <QtCore/QTimer>
-#include <QtCore/QMap>
 
 QT_BEGIN_NAMESPACE
-
-class QtGroupBoxPropertyBrowserPrivate
-{
-    QtGroupBoxPropertyBrowser *q_ptr;
-    Q_DECLARE_PUBLIC(QtGroupBoxPropertyBrowser)
-public:
-
-    void init(QWidget *parent);
-
-    void propertyInserted(QtBrowserItem *index, QtBrowserItem *afterIndex);
-    void propertyRemoved(QtBrowserItem *index);
-    void propertyChanged(QtBrowserItem *index);
-    QWidget *createEditor(QtProperty *property, QWidget *parent) const
-        { return q_ptr->createEditor(property, parent); }
-
-    void slotEditorDestroyed();
-    void slotUpdate();
-
-    struct WidgetItem
-    {
-        QWidget *widget{nullptr}; // can be null
-        QLabel *label{nullptr};
-        QLabel *widgetLabel{nullptr};
-        QGroupBox *groupBox{nullptr};
-        QGridLayout *layout{nullptr};
-        QFrame *line{nullptr};
-        WidgetItem *parent{nullptr};
-        QList<WidgetItem *> children;
-    };
-private:
-    void updateLater();
-    void updateItem(WidgetItem *item);
-    void insertRow(QGridLayout *layout, int row) const;
-    void removeRow(QGridLayout *layout, int row) const;
-
-    bool hasHeader(WidgetItem *item) const;
-
-    QMap<QtBrowserItem *, WidgetItem *> m_indexToItem;
-    QMap<WidgetItem *, QtBrowserItem *> m_itemToIndex;
-    QMap<QWidget *, WidgetItem *> m_widgetToItem;
-    QGridLayout *m_mainLayout;
-    QList<WidgetItem *> m_children;
-    QList<WidgetItem *> m_recreateQueue;
-};
 
 void QtGroupBoxPropertyBrowserPrivate::init(QWidget *parent)
 {
@@ -389,6 +339,11 @@ void QtGroupBoxPropertyBrowserPrivate::propertyChanged(QtBrowserItem *index)
     WidgetItem *item = m_indexToItem.value(index);
 
     updateItem(item);
+}
+
+QWidget* QtGroupBoxPropertyBrowserPrivate::createEditor(QtProperty* property, QWidget* parent) const
+{
+    return q_ptr->createEditor(property, parent);
 }
 
 void QtGroupBoxPropertyBrowserPrivate::updateItem(WidgetItem *item)

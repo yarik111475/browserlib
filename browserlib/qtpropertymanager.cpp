@@ -36,10 +36,10 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
+#include "qtpropertymanager.h"
 #include "qpoint3d.h"
 #include "qpoint3df.h"
 #include "qrotation3D.h"
-#include "qtpropertymanager.h"
 #include "qtpropertybrowserutils_p.h"
 #include <QtCore/QDateTime>
 #include <QtCore/QLocale>

@@ -41,11 +41,65 @@
 #define QTBUTTONPROPERTYBROWSER_H
 
 #include "qtpropertybrowser.h"
+#include <QtCore/QSet>
+#include <QtWidgets/QGridLayout>
+#include <QtWidgets/QLabel>
+#include <QtCore/QTimer>
+#include <QtCore/QMap>
+#include <QtWidgets/QToolButton>
+#include <QtWidgets/QStyle>
 
 QT_BEGIN_NAMESPACE
 
-class QtButtonPropertyBrowserPrivate;
+class QtButtonPropertyBrowser;
 
+class QtButtonPropertyBrowserPrivate
+{
+    QtButtonPropertyBrowser* q_ptr;
+    Q_DECLARE_PUBLIC(QtButtonPropertyBrowser)
+public:
+
+    void init(QWidget* parent);
+
+    void propertyInserted(QtBrowserItem* index, QtBrowserItem* afterIndex);
+    void propertyRemoved(QtBrowserItem* index);
+    void propertyChanged(QtBrowserItem* index);
+    QWidget* createEditor(QtProperty* property, QWidget* parent) const;
+
+    void slotEditorDestroyed();
+    void slotUpdate();
+    void slotToggled(bool checked);
+
+    struct WidgetItem
+    {
+        QWidget* widget{ nullptr }; // can be null
+        QLabel* label{ nullptr }; // main label with property name
+        QLabel* widgetLabel{ nullptr }; // label substitute showing the current value if there is no widget
+        QToolButton* button{ nullptr }; // expandable button for items with children
+        QWidget* container{ nullptr }; // container which is expanded when the button is clicked
+        QGridLayout* layout{ nullptr }; // layout in container
+        WidgetItem* parent{ nullptr };
+        QList<WidgetItem*> children;
+        bool expanded{ false };
+    };
+private:
+    void updateLater();
+    void updateItem(WidgetItem* item);
+    void insertRow(QGridLayout* layout, int row) const;
+    void removeRow(QGridLayout* layout, int row) const;
+    int gridRow(WidgetItem* item) const;
+    int gridSpan(WidgetItem* item) const;
+    void setExpanded(WidgetItem* item, bool expanded);
+    QToolButton* createButton(QWidget* panret = 0) const;
+
+    QMap<QtBrowserItem*, WidgetItem*> m_indexToItem;
+    QMap<WidgetItem*, QtBrowserItem*> m_itemToIndex;
+    QMap<QWidget*, WidgetItem*> m_widgetToItem;
+    QMap<QObject*, WidgetItem*> m_buttonToItem;
+    QGridLayout* m_mainLayout;
+    QList<WidgetItem*> m_children;
+    QList<WidgetItem*> m_recreateQueue;
+};
 class QtButtonPropertyBrowser : public QtAbstractPropertyBrowser
 {
     Q_OBJECT
