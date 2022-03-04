@@ -114,12 +114,12 @@
     <QtMoc Include="rangeslider.h" />
     <ClInclude Include="stdafx.h" />
     <ClCompile Include="qtbuttonpropertybrowser.cpp" />
-    <QtMoc Include="qteditorfactory.cpp">
+    <ClCompile Include="qteditorfactory.cpp">
       <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">input</DynamicSource>
       <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename).moc</QtMocFileName>
       <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Release|x64'">input</DynamicSource>
       <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename).moc</QtMocFileName>
-    </QtMoc>
+    </ClCompile>
     <ClCompile Include="qtgroupboxpropertybrowser.cpp" />
     <ClCompile Include="qtpropertybrowser.cpp" />
     <ClCompile Include="qtpropertybrowserutils.cpp" />

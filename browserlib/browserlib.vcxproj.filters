@@ -63,13 +63,13 @@
     <ClCompile Include="rangeslider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="qteditorfactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="qtbuttonpropertybrowser.h">
       <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="qteditorfactory.cpp">
-      <Filter>Source Files</Filter>
     </QtMoc>
     <QtMoc Include="qteditorfactory.h">
       <Filter>Header Files</Filter>
